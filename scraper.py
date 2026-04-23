@@ -1,6 +1,18 @@
 import re
 from urllib.parse import urlparse
 
+# link.href
+# iframe.src
+# meta.content[]
+# a.href
+# form.action
+# *.src
+# !img.src
+# *.href
+# !
+
+
+
 def scraper(url, resp):
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
