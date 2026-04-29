@@ -3,6 +3,7 @@ from typing import Any, Iterator
 from urllib.parse import ParseResult, urldefrag, urljoin, urlparse
 from utils.response import Response
 from bs4 import BeautifulSoup
+import json
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -20,8 +21,9 @@ def scraper(url, resp):
 
 # based on https://stackoverflow.com/questions/3809401/what-is-a-good-regular-expression-to-match-a-url
 meta_url = re.compile(r'(https?:\/\/|\/)[-a-zA-Z0-9()@:%_\+.~#?&/=]*$')
+url_match = re.compile(r'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&/=]*)$')
 
-def possible_links(soup: BeautifulSoup) -> Iterator[Any]:
+def soup_possible_links(soup: BeautifulSoup) -> Iterator[Any]:
     for element in soup.find_all():
         if element.has_attr('src'):
             yield element['src']
@@ -37,14 +39,44 @@ def possible_links(soup: BeautifulSoup) -> Iterator[Any]:
         if element.name == 'form' and element.has_attr('form'):
             yield element['action']
 
-def links(base: str, soup: BeautifulSoup) -> Iterator[str]:
-    for rawlink in possible_links(soup):
-        if type(rawlink) != str: continue
+def soup_links(soup: BeautifulSoup) -> Iterator[str]:
+    for rawlink in soup_possible_links(soup):
+        if type(rawlink) == str:
+            yield rawlink
 
-        url, _ = urldefrag(urljoin(base, rawlink))
-        if not is_valid(url): continue
+    
+def json_links(json_obj: Any) -> Iterator[str]:
+    if type(json_obj) is str:
+        if url_match.match(json_obj):
+            yield json_obj
+        return
+
+    if type(json_obj) is dict:
+        for value in json_obj.values():
+            yield from json_links(value)
         
-        yield url
+    if type(json_obj) is list:
+        for value in json_obj:
+            yield from json_links(value)
+            
+def filter_valid(base: str, rawlinks: Iterator[str]):
+    for rawlink in rawlinks:
+        url, _ = urldefrag(urljoin(base, rawlink))
+        
+        if is_valid(url):
+            yield url
+
+def try_extract_links(content: str):
+    try:
+        json_obj = json.loads(content)
+    except json.JSONDecodeError:
+        pass
+    else:
+        yield from json_links(json_obj)
+    
+    soup = BeautifulSoup(content, 'html.parser')
+    if (soup.find()):
+        yield from soup_links(soup)
     
 def extract_next_links(url: str, resp: Response) -> list[str]:
     # Implementation required.
@@ -61,8 +93,7 @@ def extract_next_links(url: str, resp: Response) -> list[str]:
         print("Response was None")
         return []
 
-    return list(links(url, BeautifulSoup(resp.raw_response.content, 'html.parser')))
-
+    return list(filter_valid(url, try_extract_links(resp.raw_response.content)))
 
 allowed_domains = re.compile(r'.*\.(ics|cs|informatics|stat)\.uci\.edu$')
 
