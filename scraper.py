@@ -112,7 +112,7 @@ def is_valid(url: str):
         if not allowed_domains.match(parsed.hostname or ""):
             return False
         
-        if parsed.hostname == 'stat.ics.uci.edu' and re.match(r'/events/\d{4}-\d{2}-\d{2}', parsed.path):
+        if re.match(r'/events/\d{4}-\d{2}-\d{2}', parsed.path):
             return False
         
         if re.match(
