@@ -44,11 +44,16 @@ def soup_links(soup: BeautifulSoup) -> Iterator[str]:
         if type(rawlink) == str:
             yield rawlink
 
+def try_extract_soup(content: str) -> Iterator[str]:
+    soup = BeautifulSoup(content, 'html.parser')
+    if (soup.find()):
+        yield from soup_links(soup)
     
 def json_links(json_obj: Any) -> Iterator[str]:
     if type(json_obj) is str:
         if url_match.match(json_obj):
             yield json_obj
+        yield from try_extract_soup(json_obj)
         return
 
     if type(json_obj) is dict:
@@ -73,10 +78,9 @@ def try_extract_links(content: str):
         pass
     else:
         yield from json_links(json_obj)
+        return
     
-    soup = BeautifulSoup(content, 'html.parser')
-    if (soup.find()):
-        yield from soup_links(soup)
+    yield from try_extract_soup(content)
     
 def extract_next_links(url: str, resp: Response) -> list[str]:
     # Implementation required.
