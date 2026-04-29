@@ -90,7 +90,6 @@ def extract_next_links(url: str, resp: Response) -> list[str]:
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
     
     if (resp.status != 200):
-        print(f"Skipping status {resp.status}")
         return []
     
     if (resp.raw_response is None):
@@ -117,7 +116,7 @@ def is_valid(url: str):
             return False
         
         if re.match(
-            r".*\.(css|js|bmp|gif|jpe?g|ico"
+            r".*\.(css|js|bmp|gif|jpe?g|ico|svg"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
             + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
             + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
