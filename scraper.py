@@ -57,6 +57,10 @@ def extract_next_links(url: str, resp: Response) -> list[str]:
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
     
+    if (resp.raw_response is None):
+        print("Response was None")
+        return []
+
     return list(links(url, BeautifulSoup(resp.raw_response.content, 'html.parser')))
 
 
@@ -74,7 +78,7 @@ def is_valid(url: str):
         if not allowed_domains.match(parsed.hostname or ""):
             return False
         
-        if not re.match(
+        if re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
             + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
@@ -84,6 +88,8 @@ def is_valid(url: str):
             + r"|thmx|mso|arff|rtf|jar|csv"
             + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower()):
             return False
+        
+        return True
 
     except TypeError:
         print ("TypeError for ", parsed)
