@@ -89,6 +89,10 @@ def extract_next_links(url: str, resp: Response) -> list[str]:
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
     
+    if (resp.status != 200):
+        print(f"Skipping status {resp.status}")
+        return []
+    
     if (resp.raw_response is None):
         print("Response was None")
         return []
