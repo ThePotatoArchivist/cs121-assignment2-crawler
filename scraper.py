@@ -1,5 +1,12 @@
 import re
-from urllib.parse import urlparse
+from typing import Any, Iterator
+from urllib.parse import ParseResult, urljoin, urlparse
+from utils.response import Response
+from bs4 import BeautifulSoup
+
+def scraper(url, resp):
+    links = extract_next_links(url, resp)
+    return [link for link in links if is_valid(link)]
 
 # link.href
 # iframe.src
@@ -11,13 +18,32 @@ from urllib.parse import urlparse
 # *.href
 # !
 
+# based on https://stackoverflow.com/questions/3809401/what-is-a-good-regular-expression-to-match-a-url
+meta_url = re.compile(r'(https?:\/\/|\/)[-a-zA-Z0-9()@:%_\+.~#?&/=]*$')
 
+def possible_links(soup: BeautifulSoup) -> Iterator[Any]:
+    for element in soup.find_all():
+        if element.has_attr('src'):
+            yield element['src']
 
-def scraper(url, resp):
-    links = extract_next_links(url, resp)
-    return [link for link in links if is_valid(link)]
+        if element.has_attr('href'):
+            yield element['href']
 
-def extract_next_links(url, resp):
+        if element.name == 'meta' and element.has_attr('content'):
+            content = element['content']
+            if (type(content) is str and meta_url.match(content)):
+                yield content
+
+        if element.name == 'form' and element.has_attr('form'):
+            yield element['action']
+
+def links(url: str, soup: BeautifulSoup) -> Iterator[str]:
+    for rawlink in possible_links(soup):
+        if type(rawlink) != str: continue
+        
+        yield urljoin(url, rawlink)
+    
+def extract_next_links(url: str, resp: Response) -> list[str]:
     # Implementation required.
     # url: the URL that was used to get the page
     # resp.url: the actual url of the page
@@ -27,14 +53,15 @@ def extract_next_links(url, resp):
     #         resp.raw_response.url: the url, again
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
-    return list()
+    
+    return list(links(url, BeautifulSoup(resp.raw_response.content, 'html.parser')))
 
 def is_valid(url):
     # Decide whether to crawl this url or not. 
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
+    parsed: ParseResult = urlparse(url)
     try:
-        parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
             return False
         return not re.match(
