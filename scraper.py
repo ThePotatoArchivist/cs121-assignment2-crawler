@@ -74,7 +74,7 @@ def filter_valid(base: str, rawlinks: Iterator[str]):
 def try_extract_links(content: str):
     try:
         json_obj = json.loads(content)
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, UnicodeDecodeError):
         pass
     else:
         yield from json_links(json_obj)
