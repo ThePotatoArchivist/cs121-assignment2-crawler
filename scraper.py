@@ -1,6 +1,6 @@
 import re
 from typing import Any, Iterator
-from urllib.parse import ParseResult, urljoin, urlparse
+from urllib.parse import ParseResult, urldefrag, urljoin, urlparse
 from utils.response import Response
 from bs4 import BeautifulSoup
 
@@ -37,11 +37,14 @@ def possible_links(soup: BeautifulSoup) -> Iterator[Any]:
         if element.name == 'form' and element.has_attr('form'):
             yield element['action']
 
-def links(url: str, soup: BeautifulSoup) -> Iterator[str]:
+def links(base: str, soup: BeautifulSoup) -> Iterator[str]:
     for rawlink in possible_links(soup):
         if type(rawlink) != str: continue
+
+        url, _ = urldefrag(urljoin(base, rawlink))
+        if not is_valid(url): continue
         
-        yield urljoin(url, rawlink)
+        yield url
     
 def extract_next_links(url: str, resp: Response) -> list[str]:
     # Implementation required.
@@ -56,7 +59,10 @@ def extract_next_links(url: str, resp: Response) -> list[str]:
     
     return list(links(url, BeautifulSoup(resp.raw_response.content, 'html.parser')))
 
-def is_valid(url):
+
+allowed_domains = re.compile(r'.*\.(ics|cs|informatics|stat)\.uci\.edu$')
+
+def is_valid(url: str):
     # Decide whether to crawl this url or not. 
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
@@ -64,7 +70,11 @@ def is_valid(url):
     try:
         if parsed.scheme not in set(["http", "https"]):
             return False
-        return not re.match(
+        
+        if not allowed_domains.match(parsed.hostname or ""):
+            return False
+        
+        if not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
             + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
@@ -72,7 +82,8 @@ def is_valid(url):
             + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
             + r"|epub|dll|cnf|tgz|sha1"
             + r"|thmx|mso|arff|rtf|jar|csv"
-            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
+            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower()):
+            return False
 
     except TypeError:
         print ("TypeError for ", parsed)
