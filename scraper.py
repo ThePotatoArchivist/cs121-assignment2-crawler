@@ -116,7 +116,7 @@ def is_valid(url: str):
         if not allowed_domains.match(parsed.hostname or ""):
             return False
         
-        if re.match(r'/events/', parsed.path):
+        if re.match(r'/events/', parsed.path): # events pages are 1-per-day and don't contain any information
             return False
         
         if re.match(
