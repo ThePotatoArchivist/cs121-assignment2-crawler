@@ -1,6 +1,6 @@
 import re
 from typing import Any, Iterator
-from urllib.parse import ParseResult, urldefrag, urljoin, urlparse
+from urllib.parse import ParseResult, urldefrag, urljoin, urlparse, urlunparse
 from stats import update_stats
 from utils.response import Response
 from bs4 import BeautifulSoup
@@ -67,8 +67,17 @@ def json_links(json_obj: Any) -> Iterator[str]:
             
 def filter_valid(base: str, rawlinks: Iterator[str]):
     for rawlink in rawlinks:
-        url, _ = urldefrag(urljoin(base, rawlink))
-        
+        scheme, netloc, path, params, query, _ = urlparse(urljoin(base, rawlink))
+        url = urlunparse((
+			scheme,
+			netloc,
+			path,
+			params,
+			# special case: wiki pages use query for search params
+			None if 'wiki' in netloc or 'intranet' in netloc else query,
+            None # discard fragment
+		))
+
         if is_valid(url):
             yield url
 
@@ -119,7 +128,8 @@ def is_valid(url: str):
         if not allowed_domains.match(parsed.hostname or ""):
             return False
         
-        if re.match(r'/events/', parsed.path): # events pages are 1-per-day and don't contain any information
+		# special case: events pages are 1-per-day and don't contain any information
+        if re.match(r'/events/', parsed.path):
             return False
         
         if re.match(
