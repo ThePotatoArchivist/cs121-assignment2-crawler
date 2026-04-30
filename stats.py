@@ -17,7 +17,7 @@ class Stats:
     most_words: int = 0
     most_words_url: list[str] = field(default_factory=list)
     word_counts: dict[str, int] = field(default_factory=dict)
-    subdomains: set[str] = field(default_factory=set)
+    subdomains: dict[str, int] = field(default_factory=dict)
     
 try:
     with open('stats.pickle', 'rb') as file:
@@ -59,14 +59,20 @@ def update_stats(url: str, content: str):
         
     hostname = urlparse(url).hostname
     if hostname:
-        STATS.subdomains.add(hostname)
+        try:
+            STATS.subdomains[hostname] += 1
+        except KeyError:
+            STATS.subdomains[hostname] = 1
         
     save()
 
 if __name__ == '__main__':
     print("Pages:", STATS.pages)
     print(f"Page(s) with most words: {', '.join(STATS.most_words_url)} ({STATS.most_words})")
-    print("Subdomains:", ', '.join(STATS.subdomains))
+    print("Subdomains:")
+    for subdomain, count in STATS.subdomains.items():
+        print(f'{subdomain}, {count}')
+
     print("Top 50 words:")
     
     word_counts = sorted(STATS.word_counts.items(), key = lambda item: item[1], reverse=True)
