@@ -69,13 +69,12 @@ def update_stats(url: str, content: str):
 if __name__ == '__main__':
     print("Pages:", STATS.pages)
     print(f"Page(s) with most words: {', '.join(STATS.most_words_url)} ({STATS.most_words})")
-    print("Subdomains:")
+    print("\nSubdomains:")
     for subdomain, count in STATS.subdomains.items():
         print(f'{subdomain}, {count}')
 
-    print("Top 50 words:")
-    
+    print("\nTop 50 words:")
     word_counts = sorted(STATS.word_counts.items(), key = lambda item: item[1], reverse=True)
     for i in range(50):
         word, count = word_counts[i]
-        print(f'{word}, {count}')
+        print(f'{count} {word}')
