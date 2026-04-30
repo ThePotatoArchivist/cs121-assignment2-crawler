@@ -1,6 +1,7 @@
 import re
 from typing import Any, Iterator
 from urllib.parse import ParseResult, urldefrag, urljoin, urlparse
+from stats import update_stats
 from utils.response import Response
 from bs4 import BeautifulSoup
 import json
@@ -46,7 +47,7 @@ def soup_links(soup: BeautifulSoup) -> Iterator[str]:
 
 def try_extract_soup(content: str) -> Iterator[str]:
     soup = BeautifulSoup(content, 'html.parser')
-    if (soup.find()):
+    if (soup.body):
         yield from soup_links(soup)
     
 def json_links(json_obj: Any) -> Iterator[str]:
@@ -99,6 +100,8 @@ def extract_next_links(url: str, resp: Response) -> list[str]:
     if (resp.raw_response is None):
         print("Response was None")
         return []
+
+    update_stats(url, resp.raw_response.content)
 
     return list(filter_valid(url, try_extract_links(resp.raw_response.content)))
 

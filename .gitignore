@@ -108,5 +108,6 @@ venv.bak/
 
 *.full.py
 *.shelve
+*.pickle
 
 example.*
