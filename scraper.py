@@ -74,7 +74,7 @@ def filter_valid(base: str, rawlinks: Iterator[str]):
             path,
             params,
             # special case: query params are rarely for different pages except on the root page
-            query if path == "/" or path == "" else None,
+            query if path == "/" or path == "" or path.startswith("/wp-json") else None,
             None # discard fragment
         ))
 
