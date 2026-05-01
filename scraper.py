@@ -45,9 +45,9 @@ def soup_links(soup: BeautifulSoup) -> Iterator[str]:
         if type(rawlink) == str:
             yield rawlink
 
-def try_extract_soup(content: str) -> Iterator[str]:
+def try_extract_soup(content: str, full_doc: bool = False) -> Iterator[str]:
     soup = BeautifulSoup(content, 'html.parser')
-    if (soup.body):
+    if (soup.body or not full_doc and soup.find()):
         yield from soup_links(soup)
     
 def json_links(json_obj: Any) -> Iterator[str]:
@@ -69,14 +69,14 @@ def filter_valid(base: str, rawlinks: Iterator[str]):
     for rawlink in rawlinks:
         scheme, netloc, path, params, query, _ = urlparse(urljoin(base, rawlink))
         url = urlunparse((
-			scheme,
-			netloc,
-			path,
-			params,
-			# special case: wiki pages use query for search params
-			None if 'wiki' in netloc or 'intranet' in netloc else query,
+            scheme,
+            netloc,
+            path,
+            params,
+            # special case: query params are rarely for different pages except on the root page
+            query if path == "/" or path == "" else None,
             None # discard fragment
-		))
+        ))
 
         if is_valid(url):
             yield url
@@ -90,7 +90,7 @@ def try_extract_links(content: str):
         yield from json_links(json_obj)
         return
     
-    yield from try_extract_soup(content)
+    yield from try_extract_soup(content, full_doc = True)
     
 def extract_next_links(url: str, resp: Response) -> list[str]:
     # Implementation required.
@@ -128,8 +128,12 @@ def is_valid(url: str):
         if not allowed_domains.match(parsed.hostname or ""):
             return False
         
-		# special case: events pages are 1-per-day and don't contain any information
+        # special case: events pages are 1-per-day and don't contain any information
         if re.match(r'/events/', parsed.path):
+            return False
+
+        # special case: wiki pages are many and inaccessible
+        if parsed.path.startswith("/doku.php"):
             return False
         
         if re.match(

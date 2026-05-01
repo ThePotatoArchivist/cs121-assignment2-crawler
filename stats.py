@@ -18,6 +18,7 @@ class Stats:
     most_words_url: list[str] = field(default_factory=list)
     word_counts: dict[str, int] = field(default_factory=dict)
     subdomains: dict[str, int] = field(default_factory=dict)
+    urls: list[int] = field(default_factory=list)
     
 try:
     with open('stats.pickle', 'rb') as file:
@@ -40,6 +41,7 @@ def update_stats(url: str, content: str):
     if not soup.body: return
     
     STATS.pages += 1
+    STATS.urls.append(url)
 
     word_count = 0
     
@@ -78,3 +80,6 @@ if __name__ == '__main__':
     for i in range(50):
         word, count = word_counts[i]
         print(f'{count} {word}')
+
+    for url in STATS.urls:
+        print(url)
