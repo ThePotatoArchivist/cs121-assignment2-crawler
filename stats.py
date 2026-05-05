@@ -72,7 +72,7 @@ if __name__ == '__main__':
     print("Pages:", STATS.pages)
     print(f"Page(s) with most words: {', '.join(STATS.most_words_url)} ({STATS.most_words})")
     print("\nSubdomains:")
-    for subdomain, count in STATS.subdomains.items():
+    for subdomain, count in sorted(STATS.subdomains.items(), key = lambda item: item[1], reverse = True):
         print(f'{subdomain}, {count}')
 
     print("\nTop 50 words:")
@@ -81,5 +81,5 @@ if __name__ == '__main__':
         word, count = word_counts[i]
         print(f'{count} {word}')
 
-    for url in STATS.urls:
-        print(url)
+    # for url in STATS.urls:
+    #     print(url)
